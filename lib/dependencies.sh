@@ -157,8 +157,9 @@ npm_prune_devdependencies() {
   local build_dir=${1:-} 
 
   npm_version=$(npm --version)
-
-  if [ "$NODE_ENV" == "test" ]; then
+  if [ "$NPM_FORCE_PRUNE" == "true" ]; then
+    echo "Running because NPM_FORCE_PRUNE is 'true'"
+  elif [ "$NODE_ENV" == "test" ]; then
     echo "Skipping because NODE_ENV is 'test'"
     meta_set "skipped-prune" "true"
     return 0
@@ -194,9 +195,10 @@ npm_prune_devdependencies() {
     echo "https://devcenter.heroku.com/articles/nodejs-support#specifying-an-npm-version"
     meta_set "skipped-prune" "true"
     return 0
-  else
-    cd "$build_dir" || return
-    monitor "npm-prune" npm prune --userconfig "$build_dir/.npmrc" 2>&1
-    meta_set "skipped-prune" "false"
   fi
+
+  cd "$build_dir" || return
+  monitor "npm-prune" npm prune --userconfig "$build_dir/.npmrc" 2>&1
+  run_if_present "$build_dir" 'prune'
+  meta_set "skipped-prune" "false"
 }
